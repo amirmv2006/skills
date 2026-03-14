@@ -1,96 +1,195 @@
 ---
-name: skill-creator
-description: Create new skills, modify and improve existing skills, and measure skill performance. Use when users want to create a skill from scratch, edit, or optimize an existing skill, run evals to test a skill, benchmark skill performance with variance analysis, or optimize a skill's description for better triggering accuracy.
+name: dev-skill-creator
+description: Create technical development skills for software engineers. Use when developers want to build skills for code generation, debugging workflows, test automation, CI/CD integration, architecture patterns, or technical process documentation. Focuses on showing rich diagnostic output, automated verification, and giving developers full control over the skill behavior.
 ---
 
-# Skill Creator
+# Dev Skill Creator
 
-A skill for creating new skills and iteratively improving them.
+A skill for creating technical skills targeted at software developers and engineers.
 
-At a high level, the process of creating a skill goes like this:
+**Target audience:** Software developers who understand software development processes, testing, CI/CD, and need skills that provide detailed technical output, automated validation, and programmatic verification.
 
-- Decide what you want the skill to do and roughly how it should do it
-- Write a draft of the skill
-- Create a few test prompts and run claude-with-access-to-the-skill on them
-- Help the user evaluate the results both qualitatively and quantitatively
-  - While the runs happen in the background, draft some quantitative evals if there aren't any (if there are some, you can either use as is or modify if you feel something needs to change about them). Then explain them to the user (or if they already existed, explain the ones that already exist)
-  - Use the `eval-viewer/generate_review.py` script to show the user the results for them to look at, and also let them look at the quantitative metrics
-- Rewrite the skill based on feedback from the user's evaluation of the results (and also if there are any glaring flaws that become apparent from the quantitative benchmarks)
-- Repeat until you're satisfied
-- Expand the test set and try again at larger scale
+## High-level Process
 
-Your job when using this skill is to figure out where the user is in this process and then jump in and help them progress through these stages. So for instance, maybe they're like "I want to make a skill for X". You can help narrow down what they mean, write a draft, write the test cases, figure out how they want to evaluate, run all the prompts, and repeat.
+Creating a dev-skill follows this workflow:
 
-On the other hand, maybe they already have a draft of the skill. In this case you can go straight to the eval/iterate part of the loop.
+- **Specification**: Define the technical problem, expected inputs/outputs, edge cases, and success criteria
+- **Draft implementation**: Write the skill with emphasis on:
+  - Detailed diagnostic output (logs, intermediate states, validation results)
+  - Automated verification (scripts, assertions, programmatic checks)
+  - Error detection and recovery guidance
+  - Developer control points (configuration, override mechanisms)
+- **Test harness**: Create test cases that exercise edge cases, error paths, and performance characteristics
+- **Automated evaluation**: Run test cases with quantitative assertions and performance metrics
+- **Iteration**: Refine based on test failures, performance bottlenecks, and verification gaps
+- **Scale testing**: Expand test coverage and validate at scale
 
-Of course, you should always be flexible and if the user is like "I don't need to run a bunch of evaluations, just vibe with me", you can do that instead.
+**Key differences from general skill creation:**
+- Developers expect to see HOW things work, not just results
+- Skills should expose diagnostic information, intermediate states, and decision points
+- Automated verification is preferred over manual review where possible
+- Error cases and recovery paths are first-class concerns
 
-Then after the skill is done (but again, the order is flexible), you can also run the skill description improver, which we have a whole separate script for, to optimize the triggering of the skill.
+Your job is to meet developers where they are in this process and help them build technically rigorous skills.
 
-Cool? Cool.
+## Communication Style
 
-## Communicating with the user
+**Developers expect:**
+- Technical precision without hand-holding
+- JSON schemas, API contracts, and data structures presented directly
+- Detailed error messages with root causes
+- Performance metrics (time, tokens, pass rates) upfront
+- Code examples that are production-ready, not simplified
 
-The skill creator is liable to be used by people across a wide range of familiarity with coding jargon. If you haven't heard (and how could you, it's only very recently that it started), there's a trend now where the power of Claude is inspiring plumbers to open up their terminals, parents and grandparents to google "how to install npm". On the other hand, the bulk of users are probably fairly computer-literate.
+**Don't:**
+- Explain basic programming concepts (JSON, assertions, regex, shell commands)
+- Apologize for technical complexity
+- Simplify error messages to be "friendlier"
 
-So please pay attention to context cues to understand how to phrase your communication! In the default case, just to give you some idea:
-
-- "evaluation" and "benchmark" are borderline, but OK
-- for "JSON" and "assertion" you want to see serious cues from the user that they know what those things are before using them without explaining them
-
-It's OK to briefly explain terms if you're in doubt, and feel free to clarify terms with a short definition if you're unsure if the user will get it.
+**Do:**
+- Surface all diagnostic information available
+- Show command output, logs, and intermediate states
+- Provide exact file paths, line numbers, and technical specifics
+- Assume familiarity with git, testing frameworks, CI/CD, and development workflows
 
 ---
 
 ## Creating a skill
 
-### Capture Intent
+### Capture Technical Specification
 
-Start by understanding the user's intent. The current conversation might already contain a workflow the user wants to capture (e.g., they say "turn this into a skill"). If so, extract answers from the conversation history first — the tools used, the sequence of steps, corrections the user made, input/output formats observed. The user may need to fill the gaps, and should confirm before proceeding to the next step.
+Extract the technical requirements from the conversation or probe for them:
 
-1. What should this skill enable Claude to do?
-2. When should this skill trigger? (what user phrases/contexts)
-3. What's the expected output format?
-4. Should we set up test cases to verify the skill works? Skills with objectively verifiable outputs (file transforms, data extraction, code generation, fixed workflow steps) benefit from test cases. Skills with subjective outputs (writing style, art) often don't need them. Suggest the appropriate default based on the skill type, but let the user decide.
+1. **Problem definition**: What technical problem does this skill solve? What are the inputs, outputs, and transformations?
+2. **Trigger conditions**: What code patterns, error messages, or development contexts should invoke this skill?
+3. **Output contracts**: What are the exact output formats? (JSON schemas, file types, exit codes, stdout/stderr expectations)
+4. **Edge cases and error paths**: What are the failure modes? How should errors surface to developers?
+5. **Performance requirements**: Are there latency, token usage, or resource constraints?
+6. **Verification strategy**: What assertions, scripts, or checks validate correct behavior?
 
-### Interview and Research
+For dev-skills, testing is not optional — these skills need programmatic verification.
 
-Proactively ask questions about edge cases, input/output formats, example files, success criteria, and dependencies. Wait to write test prompts until you've got this part ironed out.
+### Technical Research
 
-Check available MCPs - if useful for research (searching docs, finding similar skills, looking up best practices), research in parallel via subagents if available, otherwise inline. Come prepared with context to reduce burden on the user.
+Research the problem space:
+- Check for existing patterns in similar tools (linters, formatters, test frameworks)
+- Search documentation for relevant APIs, libraries, or frameworks
+- Identify reusable scripts or utilities that should be bundled
+- Look for common pitfalls and anti-patterns to avoid
+
+Use parallel subagents if the research is independent (e.g., API docs + existing tools + error patterns).
 
 ### Write the SKILL.md
 
-Based on the user interview, fill in these components:
+Structure for developer-focused skills:
 
-- **name**: Skill identifier
-- **description**: When to trigger, what it does. This is the primary triggering mechanism - include both what the skill does AND specific contexts for when to use it. All "when to use" info goes here, not in the body. Note: currently Claude has a tendency to "undertrigger" skills -- to not use them when they'd be useful. To combat this, please make the skill descriptions a little bit "pushy". So for instance, instead of "How to build a simple fast dashboard to display internal Anthropic data.", you might write "How to build a simple fast dashboard to display internal Anthropic data. Make sure to use this skill whenever the user mentions dashboards, data visualization, internal metrics, or wants to display any kind of company data, even if they don't explicitly ask for a 'dashboard.'"
-- **compatibility**: Required tools, dependencies (optional, rarely needed)
-- **the rest of the skill :)**
+- **name**: Kebab-case identifier (e.g., `zero-downtime-deploy`)
+- **description**: Trigger conditions (error patterns, code contexts, symptoms). Be specific with technical terms, stack traces, and tool names.
+- **compatibility**: Required tools, minimum versions, environment constraints
+- **skill body**: See structure below
+
+### Dev-Skill Structure
+
+```markdown
+# Skill Name
+
+## Overview
+Technical problem and solution approach. Include failure modes this prevents.
+
+## When to Use
+- Specific error messages or stack traces
+- Code patterns or anti-patterns
+- Development phases (pre-commit, CI, deploy)
+- Performance symptoms (high latency, memory leaks)
+
+When NOT to use (technical scenarios where this skill doesn't apply)
+
+## Diagnostic Output
+
+This skill will show:
+- Intermediate states (parsed data, validation results)
+- Decision points (why X was chosen over Y)
+- Performance metrics (time, memory, API calls)
+- Error details (root cause, recovery options)
+
+## Quick Reference
+| Operation | Command/Pattern | Notes |
+|-----------|----------------|-------|
+
+## Implementation
+Step-by-step with:
+- Code examples (production-ready, with error handling)
+- Shell commands (exact, with flags explained)
+- API contracts (request/response schemas)
+- Verification commands (how to check each step succeeded)
+
+## Verification
+Scripts or assertions to validate correct behavior:
+```bash
+# Example verification script
+./scripts/verify_output.sh <path>
+```
+
+## Error Recovery
+| Error Pattern | Root Cause | Fix |
+|---------------|------------|-----|
+
+## Performance Characteristics
+- Time complexity: O(n) for...
+- Token usage: ~X tokens per invocation
+- Memory: Y MB peak
+
+## Common Mistakes
+Technical pitfalls with root causes and fixes. Include:
+- Race conditions
+- Off-by-one errors
+- Resource leaks
+- Configuration errors
+```
 
 ### Skill Writing Guide
 
-#### Anatomy of a Skill
+#### Bundled Resources
+
+Dev-skills often need executable validation:
 
 ```
 skill-name/
-├── SKILL.md (required)
-│   ├── YAML frontmatter (name, description required)
-│   └── Markdown instructions
-└── Bundled Resources (optional)
-    ├── scripts/    - Executable code for deterministic/repetitive tasks
-    ├── references/ - Docs loaded into context as needed
-    └── assets/     - Files used in output (templates, icons, fonts)
+├── SKILL.md (instructions)
+├── scripts/
+│   ├── verify.sh          - Automated verification
+│   ├── setup_env.sh       - Environment setup
+│   └── benchmark.py       - Performance measurement
+├── references/
+│   ├── api-reference.md   - Complete API documentation
+│   └── error-catalog.md   - Known errors and fixes
+└── templates/
+    └── config.template.json - Configuration template
 ```
 
-#### Progressive Disclosure
+**When to bundle scripts:**
+- Verification logic that's complex or error-prone to replicate
+- Setup/teardown that needs precise sequencing
+- Performance benchmarks that should be consistent
+- Parsing logic that's reused across test cases
 
-Skills use a three-level loading system:
-1. **Metadata** (name + description) - Always in context (~100 words)
-2. **SKILL.md body** - In context whenever skill triggers (<500 lines ideal)
-3. **Bundled resources** - As needed (unlimited, scripts can execute without loading)
+**Scripts should:**
+- Have clear exit codes (0 = success, non-zero = failure with specific meanings)
+- Output structured data (JSON) for programmatic parsing
+- Log diagnostic information to stderr
+- Be idempotent where possible
 
-These word counts are approximate and you can feel free to go longer if needed.
+#### Progressive Disclosure for Dev Skills
+
+1. **Metadata** (name + description) - Always in context. Include technical keywords: error messages, stack trace patterns, tool names, API endpoints.
+2. **SKILL.md body** - Core workflow, decision logic, verification steps (<500 lines)
+3. **Bundled resources** - Detailed API docs, scripts, templates (unlimited)
+
+**Optimize for:**
+- Developers scanning quickly for relevant patterns
+- Copy-paste ready commands and code
+- Clear success/failure indicators
+- Diagnostic output for debugging
 
 **Key patterns:**
 - Keep SKILL.md under 500 lines; if you're approaching this limit, add an additional layer of hierarchy along with clear pointers about where the model using the skill should go next to follow up.
@@ -112,53 +211,122 @@ Claude reads only the relevant reference file.
 
 This goes without saying, but skills must not contain malware, exploit code, or any content that could compromise system security. A skill's contents should not surprise the user in their intent if described. Don't go along with requests to create misleading skills or skills designed to facilitate unauthorized access, data exfiltration, or other malicious activities. Things like a "roleplay as an XYZ" are OK though.
 
-#### Writing Patterns
+#### Writing for Developers
 
-Prefer using the imperative form in instructions.
-
-**Defining output formats** - You can do it like this:
+**Show your work:**
 ```markdown
-## Report structure
-ALWAYS use this exact template:
-# [Title]
-## Executive summary
-## Key findings
-## Recommendations
+## Validation Steps
+1. Parse input: `jq '.data' < input.json`
+2. Verify schema: `./scripts/validate_schema.py --input parsed.json`
+3. Transform: `./scripts/transform.py < parsed.json > output.json`
+4. Verify output: `./scripts/verify_output.sh output.json`
+
+Each step should produce diagnostic output. If step 2 fails, examine:
+- Schema validation errors (stderr from validate_schema.py)
+- Input structure (diff expected vs actual with `jq -S`)
+- Type mismatches (check validation.log)
 ```
 
-**Examples pattern** - It's useful to include examples. You can format them like this (but if "Input" and "Output" are in the examples you might want to deviate a little):
+**Expose decision points:**
 ```markdown
-## Commit message format
-**Example 1:**
-Input: Added user authentication with JWT tokens
-Output: feat(auth): implement JWT-based authentication
+## Choosing the Right Strategy
+
+| Condition | Strategy | Why |
+|-----------|----------|-----|
+| `data.size < 1MB` | In-memory processing | Fast, no I/O overhead |
+| `data.size > 1MB` | Streaming | Prevents OOM, slight latency increase |
+| `data.format == "nested"` | Recursive parser | Handles arbitrary depth |
+| `data.format == "flat"` | Direct mapping | 10x faster for simple cases |
+
+The skill will log which strategy was selected and why.
 ```
 
-### Writing Style
+**Production-ready code:**
+```python
+#!/usr/bin/env python3
+import sys
+import json
+import logging
 
-Try to explain to the model why things are important in lieu of heavy-handed musty MUSTs. Use theory of mind and try to make the skill general and not super-narrow to specific examples. Start by writing a draft and then look at it with fresh eyes and improve it.
+logging.basicConfig(level=logging.INFO, format='%(levelname)s: %(message)s')
+logger = logging.getLogger(__name__)
 
-### Test Cases
+def transform(input_data: dict) -> dict:
+    """
+    Transform input data structure to output format.
 
-After writing the skill draft, come up with 2-3 realistic test prompts — the kind of thing a real user would actually say. Share them with the user: [you don't have to use this exact language] "Here are a few test cases I'd like to try. Do these look right, or do you want to add more?" Then run them.
+    Args:
+        input_data: Validated input matching input_schema.json
 
-Save test cases to `evals/evals.json`. Don't write assertions yet — just the prompts. You'll draft assertions in the next step while the runs are in progress.
+    Returns:
+        Output matching output_schema.json
 
+    Raises:
+        ValueError: If required fields missing
+        TypeError: If field types incorrect
+    """
+    try:
+        # Implementation with error handling
+        logger.info(f"Processing {len(input_data.get('items', []))} items")
+        # ...
+        return output
+    except KeyError as e:
+        logger.error(f"Missing required field: {e}")
+        raise ValueError(f"Invalid input structure: {e}")
+
+if __name__ == "__main__":
+    try:
+        input_data = json.load(sys.stdin)
+        result = transform(input_data)
+        json.dump(result, sys.stdout, indent=2)
+        sys.exit(0)
+    except Exception as e:
+        logger.error(f"Transformation failed: {e}")
+        sys.exit(1)
+```
+
+### Test Cases for Dev-Skills
+
+After drafting the skill, create comprehensive test cases covering:
+
+**Functional coverage:**
+- Happy path (expected inputs, correct outputs)
+- Edge cases (empty inputs, max sizes, boundary conditions)
+- Error cases (invalid inputs, missing dependencies, corrupted data)
+- Performance cases (large inputs, stress testing, resource limits)
+
+**Test case format** - save to `evals/evals.json`:
 ```json
 {
-  "skill_name": "example-skill",
+  "skill_name": "zero-downtime-deploy",
   "evals": [
     {
       "id": 1,
-      "prompt": "User's task prompt",
-      "expected_output": "Description of expected result",
-      "files": []
+      "name": "successful-deploy-with-health-check",
+      "prompt": "Deploy version 2.1.0 to production cluster. Application: api-server, deployment: rolling update with health checks enabled. Current traffic: 10k req/s.",
+      "expected_output": "Deployment completed with 0 dropped requests. Health checks passed. Old pods terminated after traffic drained.",
+      "files": ["k8s-config.yaml", "health-check.sh"],
+      "assertions": []
+    },
+    {
+      "id": 2,
+      "name": "rollback-on-health-check-failure",
+      "prompt": "Deploy version 2.1.1 to production. Health check endpoint: /health. Expected: rollback automatically if health checks fail for 30s.",
+      "expected_output": "Health checks failed after 15s. Initiated automatic rollback. Deployment reverted to version 2.1.0.",
+      "files": ["k8s-config.yaml"],
+      "assertions": []
     }
   ]
 }
 ```
 
-See `references/schemas.md` for the full schema (including the `assertions` field, which you'll add later).
+**Assertion strategy:**
+- Use scripts over manual checks where possible
+- Test exit codes, file existence, content validation
+- Check performance metrics (time bounds, token usage)
+- Verify error messages contain root cause information
+
+See `references/schemas.md` for the complete schema.
 
 ## Running and evaluating test cases
 
@@ -196,13 +364,66 @@ Write an `eval_metadata.json` for each test case (assertions can be empty for no
 }
 ```
 
-### Step 2: While runs are in progress, draft assertions
+### Step 2: Draft quantitative assertions (while runs execute)
 
-Don't just wait for the runs to finish — you can use this time productively. Draft quantitative assertions for each test case and explain them to the user. If assertions already exist in `evals/evals.json`, review them and explain what they check.
+Write programmatic assertions that can be automatically verified. Focus on:
 
-Good assertions are objectively verifiable and have descriptive names — they should read clearly in the benchmark viewer so someone glancing at the results immediately understands what each one checks. Subjective skills (writing style, design quality) are better evaluated qualitatively — don't force assertions onto things that need human judgment.
+**Output verification:**
+```json
+{
+  "type": "file_exists",
+  "path": "output/result.json",
+  "description": "Output file created"
+}
+```
 
-Update the `eval_metadata.json` files and `evals/evals.json` with the assertions once drafted. Also explain to the user what they'll see in the viewer — both the qualitative outputs and the quantitative benchmark.
+**Content validation:**
+```json
+{
+  "type": "json_schema",
+  "path": "output/result.json",
+  "schema": "schemas/output.schema.json",
+  "description": "Output matches expected schema"
+}
+```
+
+**Performance bounds:**
+```json
+{
+  "type": "max_duration",
+  "threshold_seconds": 30,
+  "description": "Completes within 30 seconds"
+},
+{
+  "type": "max_tokens",
+  "threshold": 50000,
+  "description": "Uses less than 50k tokens"
+}
+```
+
+**Behavioral checks:**
+```json
+{
+  "type": "script",
+  "script": "./scripts/verify_no_data_loss.sh",
+  "expected_exit_code": 0,
+  "description": "No data loss during transformation"
+}
+```
+
+**Where possible, write verification scripts** instead of manual inspection. Scripts are:
+- Faster to run across iterations
+- More reliable (no human error)
+- Reusable for regression testing
+- Self-documenting (code shows exactly what's checked)
+
+Update `eval_metadata.json` and `evals/evals.json` with assertions.
+
+**Explain to the developer:**
+- What each assertion validates
+- How to run assertions manually (`./scripts/verify.sh eval-0/with_skill/outputs/`)
+- Expected failure modes (what would cause each assertion to fail)
+- Performance baselines (time/token expectations)
 
 ### Step 3: As runs complete, capture timing data
 
@@ -218,37 +439,88 @@ When each subagent task completes, you receive a notification containing `total_
 
 This is the only opportunity to capture this data — it comes through the task notification and isn't persisted elsewhere. Process each notification as it arrives rather than trying to batch them.
 
-### Step 4: Grade, aggregate, and launch the viewer
+### Step 4: Grade, aggregate, and show results
 
-Once all runs are done:
+Once all runs complete:
 
-1. **Grade each run** — spawn a grader subagent (or grade inline) that reads `agents/grader.md` and evaluates each assertion against the outputs. Save results to `grading.json` in each run directory. The grading.json expectations array must use the fields `text`, `passed`, and `evidence` (not `name`/`met`/`details` or other variants) — the viewer depends on these exact field names. For assertions that can be checked programmatically, write and run a script rather than eyeballing it — scripts are faster, more reliable, and can be reused across iterations.
+1. **Automated grading** — For each assertion:
+   ```bash
+   # Script-based assertions
+   ./scripts/verify_output.sh eval-0/with_skill/outputs/
+   echo $? # 0 = pass, non-zero = fail
 
-2. **Aggregate into benchmark** — run the aggregation script from the skill-creator directory:
+   # Schema validation
+   jq empty output.json && echo "Valid JSON"
+   jsonschema -i output.json schema.json
+
+   # Performance checks
+   jq '.duration_ms < 30000' timing.json
+   ```
+
+   Save results to `grading.json`. **CRITICAL:** Use exact field names `text`, `passed`, `evidence` (not `name`/`met`/`details`):
+   ```json
+   {
+     "assertions": [
+       {
+         "text": "Output file exists",
+         "passed": true,
+         "evidence": "File found at output/result.json, size: 1.2MB"
+       },
+       {
+         "text": "Schema validation passed",
+         "passed": false,
+         "evidence": "Missing required field 'timestamp'. Schema: output.schema.json"
+       }
+     ]
+   }
+   ```
+
+2. **Benchmark aggregation**:
    ```bash
    python -m scripts.aggregate_benchmark <workspace>/iteration-N --skill-name <name>
    ```
-   This produces `benchmark.json` and `benchmark.md` with pass_rate, time, and tokens for each configuration, with mean ± stddev and the delta. If generating benchmark.json manually, see `references/schemas.md` for the exact schema the viewer expects.
-Put each with_skill version before its baseline counterpart.
+   Produces `benchmark.json` + `benchmark.md` with pass rates, timing, token usage, and statistical significance.
 
-3. **Do an analyst pass** — read the benchmark data and surface patterns the aggregate stats might hide. See `agents/analyzer.md` (the "Analyzing Benchmark Results" section) for what to look for — things like assertions that always pass regardless of skill (non-discriminating), high-variance evals (possibly flaky), and time/token tradeoffs.
+3. **Technical analysis** — identify:
+   - Assertions with 100% pass rate (possibly too weak)
+   - Assertions with 0% pass rate (skill not working or assertion too strict)
+   - High variance in performance (flaky tests or non-deterministic behavior)
+   - Token usage patterns (where are tokens spent?)
+   - Time bottlenecks (which steps are slow?)
+   - Error patterns (common failure modes)
 
-4. **Launch the viewer** with both qualitative outputs and quantitative data:
+4. **Launch viewer**:
    ```bash
-   nohup python <skill-creator-path>/eval-viewer/generate_review.py \
+   nohup python <skill-creator>/eval-viewer/generate_review.py \
      <workspace>/iteration-N \
-     --skill-name "my-skill" \
-     --benchmark <workspace>/iteration-N/benchmark.json \
+     --skill-name "dev-skill-name" \
+     --benchmark benchmark.json \
      > /dev/null 2>&1 &
    VIEWER_PID=$!
    ```
-   For iteration 2+, also pass `--previous-workspace <workspace>/iteration-<N-1>`.
 
-   **Cowork / headless environments:** If `webbrowser.open()` is not available or the environment has no display, use `--static <output_path>` to write a standalone HTML file instead of starting a server. Feedback will be downloaded as a `feedback.json` file when the user clicks "Submit All Reviews". After download, copy `feedback.json` into the workspace directory for the next iteration to pick up.
+**Tell the developer:**
+```
+Results at http://localhost:8000
 
-Note: please use generate_review.py to create the viewer; there's no need to write custom HTML.
+**Outputs tab:** Review each test case output with:
+- Generated files (rendered inline)
+- Logs and diagnostic output
+- Assertion results (expand "Formal Grades")
+- Performance metrics (timing.json)
 
-5. **Tell the user** something like: "I've opened the results in your browser. There are two tabs — 'Outputs' lets you click through each test case and leave feedback, 'Benchmark' shows the quantitative comparison. When you're done, come back here and let me know."
+**Benchmark tab:**
+- Pass rates by config (with_skill vs baseline)
+- Time/token distributions (mean ± stddev)
+- Per-eval breakdown
+- Statistical analysis
+
+**What to look for:**
+- Unexpected failures (check logs for root cause)
+- Performance regressions (compare timing across iterations)
+- Missing assertions (edge cases not covered)
+- Verification gaps (manual checks that should be automated)
+```
 
 ### What the user sees in the viewer
 
@@ -289,36 +561,301 @@ kill $VIEWER_PID 2>/dev/null
 
 ---
 
-## Improving the skill
+## Improving Dev-Skills
 
-This is the heart of the loop. You've run the test cases, the user has reviewed the results, and now you need to make the skill better based on their feedback.
+Use test results and developer feedback to refine the skill.
 
-### How to think about improvements
+### Analysis Priorities
 
-1. **Generalize from the feedback.** The big picture thing that's happening here is that we're trying to create skills that can be used a million times (maybe literally, maybe even more who knows) across many different prompts. Here you and the user are iterating on only a few examples over and over again because it helps move faster. The user knows these examples in and out and it's quick for them to assess new outputs. But if the skill you and the user are codeveloping works only for those examples, it's useless. Rather than put in fiddly overfitty changes, or oppressively constrictive MUSTs, if there's some stubborn issue, you might try branching out and using different metaphors, or recommending different patterns of working. It's relatively cheap to try and maybe you'll land on something great.
+1. **Automated verification gaps** — Where are you relying on manual review that could be scripted?
+   - Add verification scripts to `scripts/`
+   - Convert visual checks to programmatic assertions
+   - Make flaky tests deterministic
 
-2. **Keep the prompt lean.** Remove things that aren't pulling their weight. Make sure to read the transcripts, not just the final outputs — if it looks like the skill is making the model waste a bunch of time doing things that are unproductive, you can try getting rid of the parts of the skill that are making it do that and seeing what happens.
+2. **Error handling** — Do error messages provide actionable information?
+   - Include root cause, not just symptoms
+   - Provide recovery suggestions
+   - Show diagnostic commands
+   - Log context (state at failure time)
 
-3. **Explain the why.** Try hard to explain the **why** behind everything you're asking the model to do. Today's LLMs are *smart*. They have good theory of mind and when given a good harness can go beyond rote instructions and really make things happen. Even if the feedback from the user is terse or frustrated, try to actually understand the task and why the user is writing what they wrote, and what they actually wrote, and then transmit this understanding into the instructions. If you find yourself writing ALWAYS or NEVER in all caps, or using super rigid structures, that's a yellow flag — if possible, reframe and explain the reasoning so that the model understands why the thing you're asking for is important. That's a more humane, powerful, and effective approach.
+3. **Performance bottlenecks** — Where is time/token budget spent?
+   - Profile which steps are slow
+   - Identify unnecessary work
+   - Consider caching or streaming for large inputs
+   - Bundle frequently-used scripts
 
-4. **Look for repeated work across test cases.** Read the transcripts from the test runs and notice if the subagents all independently wrote similar helper scripts or took the same multi-step approach to something. If all 3 test cases resulted in the subagent writing a `create_docx.py` or a `build_chart.py`, that's a strong signal the skill should bundle that script. Write it once, put it in `scripts/`, and tell the skill to use it. This saves every future invocation from reinventing the wheel.
+4. **Developer control** — Where does the skill make decisions that developers should control?
+   - Add configuration options
+   - Expose override mechanisms
+   - Provide escape hatches for edge cases
+   - Document decision rationale
 
-This task is pretty important (we are trying to create billions a year in economic value here!) and your thinking time is not the blocker; take your time and really mull things over. I'd suggest writing a draft revision and then looking at it anew and making improvements. Really do your best to get into the head of the user and understand what they want and need.
+5. **Diagnostic visibility** — Can developers debug when things go wrong?
+   - Show intermediate states
+   - Log decision points
+   - Surface validation results
+   - Provide inspection commands
 
-### The iteration loop
+### Iteration Principles
 
-After improving the skill:
+**For developers:**
+- Favor explicit over implicit
+- Expose don't hide (show diagnostic info)
+- Fail loud with context (better than silent failure)
+- Optimize for debugging (rich error messages)
+- Automate verification (scripts over human review)
 
-1. Apply your improvements to the skill
-2. Rerun all test cases into a new `iteration-<N+1>/` directory, including baseline runs. If you're creating a new skill, the baseline is always `without_skill` (no skill) — that stays the same across iterations. If you're improving an existing skill, use your judgment on what makes sense as the baseline: the original version the user came in with, or the previous iteration.
-3. Launch the reviewer with `--previous-workspace` pointing at the previous iteration
-4. Wait for the user to review and tell you they're done
-5. Read the new feedback, improve again, repeat
+**Bundle reusable code:** If test transcripts show subagents repeatedly writing similar helper scripts, bundle them:
+```
+scripts/
+├── parse_config.py      - Used by all 3 test cases
+├── validate_schema.sh   - Common validation logic
+└── generate_report.py   - Standard output formatting
+```
 
-Keep going until:
-- The user says they're happy
-- The feedback is all empty (everything looks good)
-- You're not making meaningful progress
+**Example: Before bundling**
+```markdown
+## Step 2: Parse configuration
+Use Python to parse the YAML config file and extract the deployment parameters.
+```
+(Result: Each subagent writes their own parser, slightly different, bugs in each)
+
+**After bundling:**
+```markdown
+## Step 2: Parse configuration
+Run the bundled parser:
+```bash
+./scripts/parse_config.py config.yaml > parsed.json
+```
+
+The parser validates:
+- Required fields present (name, version, replicas)
+- Types correct (replicas is int, not string)
+- Value ranges (replicas between 1-100)
+
+Exits with:
+- 0 if valid (parsed JSON to stdout)
+- 1 if invalid (error details to stderr)
+```
+(Result: Consistent, tested, reusable parsing logic)
+
+### Technical Test Case Examples
+
+Dev-skills need comprehensive test coverage:
+
+**Happy path:**
+```json
+{
+  "id": 1,
+  "name": "standard-deployment-success",
+  "prompt": "Deploy api-server v2.1.0 to prod cluster with rolling update. 3 replicas, health check: /health returns 200. Expected: zero downtime.",
+  "expected_output": "Deployment successful. 3/3 pods healthy. 0 requests dropped.",
+  "files": ["k8s-deployment.yaml"],
+  "assertions": [
+    {"type": "file_exists", "path": "deployment-log.json"},
+    {"type": "script", "script": "./scripts/verify_zero_downtime.sh"},
+    {"type": "max_duration", "threshold_seconds": 300}
+  ]
+}
+```
+
+**Edge case:**
+```json
+{
+  "id": 2,
+  "name": "deployment-with-max-replicas",
+  "prompt": "Deploy with 100 replicas (cluster max). Test resource allocation and pod scheduling under load.",
+  "expected_output": "All 100 pods scheduled successfully. No resource quota exceeded. Deployment complete.",
+  "files": ["k8s-deployment-large.yaml"],
+  "assertions": [
+    {"type": "script", "script": "./scripts/verify_all_pods_running.sh", "args": ["100"]},
+    {"type": "json_field", "path": "result.json", "field": "successful_pods", "expected": 100}
+  ]
+}
+```
+
+**Error case:**
+```json
+{
+  "id": 3,
+  "name": "deployment-fails-health-check",
+  "prompt": "Deploy v2.2.0. Health check will fail (returns 500). Expected: automatic rollback to v2.1.0, no prod impact.",
+  "expected_output": "Health check failed after 30s. Rolled back to v2.1.0. Production traffic unaffected.",
+  "files": ["k8s-deployment-broken.yaml"],
+  "assertions": [
+    {"type": "script", "script": "./scripts/verify_rollback_occurred.sh"},
+    {"type": "log_contains", "path": "deployment-log.json", "pattern": "Rollback initiated"},
+    {"type": "max_dropped_requests", "threshold": 0}
+  ]
+}
+```
+
+**Performance:**
+```json
+{
+  "id": 4,
+  "name": "deployment-performance-baseline",
+  "prompt": "Deploy to 50-node cluster. Measure total deployment time and resource usage.",
+  "expected_output": "Deployment time recorded. Resource metrics collected.",
+  "files": ["k8s-deployment.yaml"],
+  "assertions": [
+    {"type": "max_duration", "threshold_seconds": 600},
+    {"type": "max_tokens", "threshold": 100000},
+    {"type": "script", "script": "./scripts/check_resource_usage.sh", "expected_exit_code": 0}
+  ]
+}
+```
+
+---
+
+## Verification-First Development
+
+Dev-skills must be verifiable. Developers need confidence that the skill works correctly.
+
+### Verification Strategy Hierarchy
+
+1. **Automated scripts** (best) — deterministic, fast, reusable
+   ```bash
+   ./scripts/verify_output.sh <output_dir>
+   exit $?  # 0 = pass, non-zero = specific failure mode
+   ```
+
+2. **Programmatic assertions** — JSON schema, file checks, performance bounds
+   ```json
+   {"type": "json_schema", "path": "output.json", "schema": "schema.json"}
+   ```
+
+3. **Manual review** (last resort) — only for truly subjective evaluation
+
+### Building Verification Scripts
+
+**Requirements:**
+- Clear exit codes (0 = success, specific codes for different failures)
+- Structured output (JSON for machine parsing)
+- Diagnostic info (why did it pass/fail?)
+- Idempotent (safe to run multiple times)
+
+**Example:**
+```bash
+#!/usr/bin/env bash
+# verify_deployment.sh - Verify zero-downtime deployment succeeded
+
+set -euo pipefail
+
+OUTPUT_DIR="$1"
+DEPLOYMENT_LOG="$OUTPUT_DIR/deployment.json"
+
+# Check required files exist
+if [[ ! -f "$DEPLOYMENT_LOG" ]]; then
+  echo "ERROR: deployment log not found" >&2
+  exit 1
+fi
+
+# Parse and verify metrics
+DROPPED_REQUESTS=$(jq -r '.metrics.dropped_requests' "$DEPLOYMENT_LOG")
+if [[ "$DROPPED_REQUESTS" != "0" ]]; then
+  echo "FAIL: $DROPPED_REQUESTS requests dropped during deployment" >&2
+  exit 2
+fi
+
+PODS_HEALTHY=$(jq -r '.status.healthy_pods' "$DEPLOYMENT_LOG")
+PODS_EXPECTED=$(jq -r '.config.replicas' "$DEPLOYMENT_LOG")
+if [[ "$PODS_HEALTHY" != "$PODS_EXPECTED" ]]; then
+  echo "FAIL: Only $PODS_HEALTHY/$PODS_EXPECTED pods healthy" >&2
+  exit 3
+fi
+
+# All checks passed
+echo "PASS: Zero-downtime deployment verified"
+echo "{\"passed\": true, \"healthy_pods\": $PODS_HEALTHY, \"dropped_requests\": $DROPPED_REQUESTS}"
+exit 0
+```
+
+### Performance Verification
+
+Track and assert on performance characteristics:
+
+```json
+{
+  "timing": {
+    "total_duration_ms": 15234,
+    "breakdown": {
+      "parse_config": 120,
+      "validate": 450,
+      "deploy": 14500,
+      "verify": 164
+    }
+  },
+  "tokens": {
+    "total": 45230,
+    "by_phase": {
+      "planning": 8500,
+      "execution": 32000,
+      "verification": 4730
+    }
+  },
+  "resources": {
+    "peak_memory_mb": 256,
+    "api_calls": 12,
+    "file_operations": 45
+  }
+}
+```
+
+**Assert on:**
+- Total duration < threshold (detect regressions)
+- Token usage < budget (control costs)
+- Resource consumption (memory, API calls, file I/O)
+- Breakdown by phase (identify bottlenecks)
+
+### Error Documentation
+
+Dev-skills must document error patterns comprehensively:
+
+**Error catalog structure:**
+```markdown
+## Error: CrashLoopBackOff during deployment
+
+**Symptom:**
+```
+kubectl get pods
+NAME                    READY   STATUS             RESTARTS
+api-server-abc123       0/1     CrashLoopBackOff   5
+```
+
+**Root cause:** Health check endpoint returns 503 during 60s warmup period. Kubernetes marks pod as unhealthy and restarts it before warmup completes.
+
+**Solution:**
+Increase `initialDelaySeconds` in health check probe:
+```yaml
+livenessProbe:
+  httpGet:
+    path: /health
+    port: 8080
+  initialDelaySeconds: 90  # Was: 30
+  periodSeconds: 10
+```
+
+**Verification:**
+```bash
+kubectl logs api-server-abc123 | grep "Server started"
+# Should see startup complete before first health check
+```
+
+**Prevention:**
+- Set `initialDelaySeconds` > application warmup time
+- Use readiness probe separate from liveness probe
+- Monitor warmup duration in metrics
+```
+
+**Include for each error:**
+- Exact symptom (command output, log pattern, metrics)
+- Root cause (technical explanation)
+- Solution (precise fix with code/config)
+- Verification command (how to confirm fix worked)
+- Prevention strategies (how to avoid in future)
+
+---
 
 ---
 
@@ -334,28 +871,50 @@ This is optional, requires subagents, and most users won't need it. The human re
 
 The description field in SKILL.md frontmatter is the primary mechanism that determines whether Claude invokes a skill. After creating or improving a skill, offer to optimize the description for better triggering accuracy.
 
-### Step 1: Generate trigger eval queries
+### Step 1: Generate trigger evaluation queries
 
-Create 20 eval queries — a mix of should-trigger and should-not-trigger. Save as JSON:
+Create 20 eval queries testing trigger accuracy:
 
+**Should-trigger queries (8-10):** Realistic development scenarios with technical context
 ```json
 [
-  {"query": "the user prompt", "should_trigger": true},
-  {"query": "another prompt", "should_trigger": false}
+  {
+    "query": "our k8s deployment keeps timing out during rollouts. pods show CrashLoopBackOff after ~30s, health check endpoint is /api/health but it returns 503 for the first minute while the app warms up. how do i configure the deployment to wait longer before marking pods as failed?",
+    "should_trigger": true
+  },
+  {
+    "query": "the CI pipeline failed with 'Error: ENOENT: no such file or directory, open /app/dist/bundle.js' but locally `npm run build` works fine. dockerfile is:\nFROM node:18\nCOPY . /app\nRUN npm ci\nRUN npm run build\nCMD [\"npm\", \"start\"]\nwhat's wrong?",
+    "should_trigger": true
+  }
 ]
 ```
 
-The queries must be realistic and something a Claude Code or Claude.ai user would actually type. Not abstract requests, but requests that are concrete and specific and have a good amount of detail. For instance, file paths, personal context about the user's job or situation, column names and values, company names, URLs. A little bit of backstory. Some might be in lowercase or contain abbreviations or typos or casual speech. Use a mix of different lengths, and focus on edge cases rather than making them clear-cut (the user will get a chance to sign off on them).
+**Should-not-trigger queries (8-10):** Near-miss scenarios that share keywords but need different skills
+```json
+[
+  {
+    "query": "my k8s cluster monitoring shows high CPU but when i check the pods they're all under 50%. grafana dashboard: https://grafana.internal/d/cluster-metrics. what's using the CPU?",
+    "should_trigger": false
+  },
+  {
+    "query": "need to write a python script that deploys to k8s using the client library. should use apply() not create() so it's idempotent. any examples of this pattern?",
+    "should_trigger": false
+  }
+]
+```
 
-Bad: `"Format this data"`, `"Extract text from PDF"`, `"Create a chart"`
+**Requirements:**
+- Concrete technical details (tool names, error messages, file paths, commands)
+- Real stack traces, log snippets, or configuration fragments
+- Specific version numbers, environment details, or system constraints
+- Typos, abbreviations, casual phrasing (mirrors actual developer queries)
+- Mix of lengths (50-300 words)
 
-Good: `"ok so my boss just sent me this xlsx file (its in my downloads, called something like 'Q4 sales final FINAL v2.xlsx') and she wants me to add a column that shows the profit margin as a percentage. The revenue is in column C and costs are in column D i think"`
-
-For the **should-trigger** queries (8-10), think about coverage. You want different phrasings of the same intent — some formal, some casual. Include cases where the user doesn't explicitly name the skill or file type but clearly needs it. Throw in some uncommon use cases and cases where this skill competes with another but should win.
-
-For the **should-not-trigger** queries (8-10), the most valuable ones are the near-misses — queries that share keywords or concepts with the skill but actually need something different. Think adjacent domains, ambiguous phrasing where a naive keyword match would trigger but shouldn't, and cases where the query touches on something the skill does but in a context where another tool is more appropriate.
-
-The key thing to avoid: don't make should-not-trigger queries obviously irrelevant. "Write a fibonacci function" as a negative test for a PDF skill is too easy — it doesn't test anything. The negative cases should be genuinely tricky.
+**Focus on edge cases:**
+- Ambiguous phrasing where keywords match but intent differs
+- Related domains (monitoring vs deployment vs debugging)
+- Overlapping concerns where multiple skills could apply
+- Technical terms with multiple meanings (e.g., "deploy" = CI/CD vs infrastructure)
 
 ### Step 2: Review with user
 
